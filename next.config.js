@@ -1,4 +1,12 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  // Required for bcryptjs on Vercel serverless
+  serverExternalPackages: ["bcryptjs"],
 
-module.exports = nextConfig
+  experimental: {
+    // Needed for Prisma on Vercel edge/serverless
+    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
+  },
+};
+
+module.exports = nextConfig;
