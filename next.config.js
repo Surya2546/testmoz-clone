@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Required for bcryptjs on Vercel serverless
-  serverExternalPackages: ["bcryptjs"],
-
   experimental: {
-    // Needed for Prisma on Vercel edge/serverless
+    // ✅ Correct key for Next.js 14 — serverExternalPackages is Next.js 15+ only
     serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
   },
 };
