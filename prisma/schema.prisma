@@ -1,0 +1,115 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // If using Neon with connection pooling (recommended for serverless):
+  // directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String   // hashed with bcryptjs
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tests     Test[]
+}
+
+model Test {
+  id        String     @id @default(cuid())
+  title     String     @default("Untitled test")
+  status    TestStatus @default(DRAFT)
+  passcode  String?
+  timeLimit Int        @default(0) // 0 = no limit, otherwise minutes
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  ownerId   String
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  questions Question[]
+  settings  TestSettings?
+  attempts  Attempt[]
+}
+
+enum TestStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Question {
+  id           String       @id @default(cuid())
+  type         QuestionType
+  text         String       @default("")
+  points       Int          @default(1)
+  options      String[]     // for multiple_choice: array of option strings
+  correctIndex Int?         // for multiple_choice: index into options
+  correctBool  Boolean?     // for true_false
+  correctText  String?      // for fill_blank / short_answer
+  explanation  String?
+  order        Int          @default(0)
+  createdAt    DateTime     @default(now())
+
+  testId       String
+  test         Test         @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  answers      Answer[]
+}
+
+enum QuestionType {
+  multiple_choice
+  true_false
+  fill_blank
+  short_answer
+  essay
+}
+
+model TestSettings {
+  id               String  @id @default(cuid())
+  shuffleQuestions Boolean @default(false)
+  shuffleOptions   Boolean @default(false)
+  showScore        Boolean @default(true)
+  showAnswers      Boolean @default(true)
+  maxAttempts      Int     @default(1)
+  passingScore     Int     @default(60)
+  onePerPage       Boolean @default(false)
+
+  testId           String  @unique
+  test             Test    @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+model Attempt {
+  id          String        @id @default(cuid())
+  takerName   String
+  score       Int           @default(0)   // earned points
+  totalPoints Int           @default(0)
+  percentage  Int           @default(0)
+  timeTaken   Int           @default(0)   // seconds
+  submittedAt DateTime      @default(now())
+
+  testId      String
+  test        Test          @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  answers     Answer[]
+}
+
+model Answer {
+  id           String   @id @default(cuid())
+  answerIndex  Int?     // multiple_choice
+  answerBool   Boolean? // true_false
+  answerText   String?  // fill_blank, short_answer, essay
+  isCorrect    Boolean  @default(false)
+  pointsEarned Int      @default(0)
+
+  attemptId    String
+  attempt      Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  questionId   String
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
